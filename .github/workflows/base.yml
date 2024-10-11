@@ -22,7 +22,7 @@ jobs:
         shell: bash
         run: |
           # Testing scripts...
-          wget -O "./cache/bosh.tar.xz" -- "http://fuz.su/pub/schilytools/bin/schily-2024-03-21-x86_64-linux-gcc.tar.xz" || echo $?
+          wget -S -O "./cache/bosh.tar.xz" -- "http://fuz.su/pub/schilytools/bin/schily-2024-03-21-x86_64-linux-gcc.tar.xz" || return $?
           mkdir -p -- "./cache/bosh"
           tar –x -f "./cache/bosh.tar.xz" -C "./cache/bosh"
           "./cache/bosh/opt/schily/bin/bosh" --version
