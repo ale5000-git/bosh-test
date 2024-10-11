@@ -1,0 +1,30 @@
+---
+
+permissions: {}
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  base:
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+      fail-fast: false
+    name: "${{ matrix.os }}"
+    runs-on: "${{ matrix.os }}"
+
+    steps:
+      - name: "Checkout sources"
+        uses: actions/checkout@v4
+      - name: "Test scripts"
+        shell: bash
+        run: |
+          # Testing scripts...
+          EXIT_CODE='0'
+          wget -q -O "./cache/bosh.tar.xz" -- "http://fuz.su/pub/schilytools/bin/schily-2024-03-21-x86_64-linux-gcc.tar.xz"
+          mkdir -f -- "./cache/bosh"
+          tar –x -f "./cache/bosh.tar.xz" -C "./cache/bosh"
+          "./cache/bosh/opt/schily/bin/bosh" --version
+          "./cache/bosh/opt/schily/bin/bosh" -c 'echo 123'
