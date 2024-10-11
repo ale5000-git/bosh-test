@@ -24,7 +24,6 @@ jobs:
           # Testing scripts...
           mkdir -p -- "./cache/bosh"
           wget -q -S -O "./cache/bosh.tar.xz" -- "http://fuz.su/pub/schilytools/bin/schily-2024-03-21-x86_64-linux-gcc.tar.xz" || exit $?
-          cd "./cache/bosh" || exit $?
-          tar –xf "./cache/bosh.tar.xz" || exit $?
+          tar -xf "./cache/bosh.tar.xz" -C "./cache/bosh" || exit $?
           "./cache/bosh/opt/schily/bin/bosh" --version
           "./cache/bosh/opt/schily/bin/bosh" -c 'echo 123'
