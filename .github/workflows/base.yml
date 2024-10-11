@@ -18,12 +18,29 @@ jobs:
     steps:
       - name: "Checkout sources"
         uses: actions/checkout@v4
+      - name: "Cache shells"
+        id: cache-shells
+        uses: actions/cache@v4
+        with:
+          path: "cache/shells"
+          key: "${{ runner.os }}-shells"
       - name: "Test scripts"
         shell: bash
         run: |
           # Testing scripts...
-          mkdir -p -- "./cache/bosh"
-          wget -q -S -O "./cache/bosh.tar.xz" -- "http://fuz.su/pub/schilytools/bin/schily-2024-03-21-x86_64-linux-gcc.tar.xz" || exit $?
-          tar -xf "./cache/bosh.tar.xz" -C "./cache/bosh" || exit $?
-          "./cache/bosh/opt/schily/bin/bosh" --version
-          "./cache/bosh/opt/schily/bin/bosh" -c 'echo 123'
+          shells_dir="./cache/shells"
+          if test -e "${shells_dir:?}/bosh.tar.xz"; then
+            : # Already downloaded
+          else
+            echo 'Downloading bosh...'
+            mkdir -p -- "${shells_dir:?}" || exit $?
+            wget -q -O "${shells_dir:?}/bosh.tar.xz" -- "http://fuz.su/pub/schilytools/bin/schily-2024-03-21-x86_64-linux-gcc.tar.xz" || exit $?
+          fi
+          mkdir -p -- "${shells_dir:?}/extracted/bosh" || exit $?
+          tar -x -f "${shells_dir:?}/bosh.tar.xz" -C "${shells_dir:?}/extracted/bosh" || exit $?
+          PATH="${PATH?}:${shells_dir:?}/extracted/bosh/opt/schily/bin" || exit $?
+          #
+          bosh --version || exit $?
+          bosh -c 'echo 123' || exit $?
+          #
+          rm -f -r -- "${shells_dir:?}/extracted" || exit $?
