@@ -64,7 +64,7 @@ jobs:
           }
           if test "${current_os:?}" = 'Linux'; then PATH="${PATH:-/usr/bin}:${workspace_dir:?}/cache/shells/extracted/bosh/opt/schily/bin" || exit "${?}"; fi
           #
-          bosh --version | head -n 1 || exit $?
+          bosh 2>&1 --version | head -n 1 || exit $?
           bosh -c 'echo 123' || exit $?
       - name: "Clean extracted files"
         if: "always()"
