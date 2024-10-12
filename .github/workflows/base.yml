@@ -1,5 +1,8 @@
 ---
+# SPDX-FileCopyrightText: (c) 2024 ale5000
+# SPDX-License-Identifier: GPL-3.0-or-later
 
+name: "Scripts testing"
 permissions: {}
 on:
   push:
@@ -19,28 +22,54 @@ jobs:
       - name: "Checkout sources"
         uses: actions/checkout@v4
       - name: "Cache shells"
-        id: cache-shells
         uses: actions/cache@v4
         with:
           path: "cache/shells"
           key: "${{ runner.os }}-shells"
+      - name: "Prepare shells"
+        shell: bash
+        run: |
+          # Preparing shells...
+          # shellcheck disable=SC2016 # Intended: Expressions don't expand in single quotes
+          {
+            readonly current_os='${{ runner.os }}'
+            readonly shells_dir='${{ github.workspace }}/cache/shells'
+          }
+          prepare_shell()
+          {
+            if test ! -s "${shells_dir:?}/${1:?}.${2:?}"; then
+              printf '%s\n' "Downloading '${1?}'..."
+              mkdir -p -- "${shells_dir:?}" || return "${?}"
+              if wget -q -O "${shells_dir:?}/${1:?}.${2:?}" -- "${3:?}" && test -s "${shells_dir:?}/${1:?}.${2:?}"; then
+                : # OK
+              else
+                rm -f -- "${shells_dir:?}/${1:?}.${2:?}" || :
+                return 1
+              fi
+            fi
+            mkdir -p -- "${shells_dir:?}/extracted/${1?}" || return "${?}"
+            tar -x -f "${shells_dir:?}/${1:?}.${2:?}" -C "${shells_dir:?}/extracted/${1:?}" || return "${?}"
+          }
+          if test "${current_os:?}" = 'Linux'; then
+            prepare_shell 'bosh' 'tar.xz' 'http://fuz.su/pub/schilytools/bin/schily-2024-03-21-x86_64-linux-gcc.tar.xz' || exit "${?}"
+          fi
       - name: "Test scripts"
         shell: bash
         run: |
           # Testing scripts...
-          shells_dir="./cache/shells"
-          if test -e "${shells_dir:?}/bosh.tar.xz"; then
-            : # Already downloaded
-          else
-            echo 'Downloading bosh...'
-            mkdir -p -- "${shells_dir:?}" || exit $?
-            wget -q -O "${shells_dir:?}/bosh.tar.xz" -- "http://fuz.su/pub/schilytools/bin/schily-2024-03-21-x86_64-linux-gcc.tar.xz" || exit $?
-          fi
-          mkdir -p -- "${shells_dir:?}/extracted/bosh" || exit $?
-          tar -x -f "${shells_dir:?}/bosh.tar.xz" -C "${shells_dir:?}/extracted/bosh" || exit $?
-          PATH="${PATH?}:${shells_dir:?}/extracted/bosh/opt/schily/bin" || exit $?
+          # shellcheck disable=SC2016 # Intended: Expressions don't expand in single quotes
+          {
+            readonly current_os='${{ runner.os }}'
+            readonly workspace_dir='${{ github.workspace }}'
+          }
+          if test "${current_os:?}" = 'Linux'; then PATH="${PATH:-/usr/bin}:${workspace_dir:?}/cache/shells/extracted/bosh/opt/schily/bin" || exit "${?}"; fi
           #
-          bosh --version || exit $?
+          bosh --version | head -n 1 || exit $?
           bosh -c 'echo 123' || exit $?
-          #
+      - name: "Clean extracted files"
+        if: "always()"
+        shell: bash
+        run: |
+          # Cleaning extracted files
+          readonly shells_dir='${{ github.workspace }}/cache/shells'
           rm -f -r -- "${shells_dir:?}/extracted" || exit $?
